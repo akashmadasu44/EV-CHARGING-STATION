@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>EV Charger Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: sans-serif; background: #f4f4f9; text-align: center; padding: 20px; }
+        .card { background: white; max-width: 400px; margin: auto; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .btn { width: 100%; padding: 15px; margin: 5px 0; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; transition: 0.3s; }
+        .time-btn { background: #eef2f3; color: #333; }
+        .time-btn:hover { background: #3498db; color: white; }
+        #qr-section { display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; }
+        #qr-img { width: 200px; height: 200px; }
+        .start-btn { background: #27ae60; color: white; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>EV Charging Station</h2>
+    <p>Rate: ₹2 per Minute</p>
+
+    <div id="selection">
+        <button class="btn time-btn" onclick="selectTime(5, 10)">5 Mins (₹10)</button>
+        <button class="btn time-btn" onclick="selectTime(10, 20)">10 Mins (₹20)</button>
+        <button class="btn time-btn" onclick="selectTime(30, 60)">30 Mins (₹60)</button>
+    </div>
+
+    <div id="qr-section">
+        <h3>Scan to Pay</h3>
+        <img id="qr-img" src="" alt="UPI QR">
+        <p id="amt-display"></p>
+        <button class="btn start-btn" onclick="startCharger()">I Have Paid - Start Charging</button>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    // 1. PASTE YOUR FIREBASE CONFIG HERE
+    const firebaseConfig = {
+        apiKey: "AIzaSyBaj15GYuiV-mpLW7LqBDYRkLFUHaErd8s",
+        databaseURL"https://ev-charging-station-bea94-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "ev-charging-station-bea94"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    let currentMins = 0;
+
+    // 2. Generate QR
+    window.selectTime = function(mins, price) {
+        currentMins = mins;
+        const myUPI = "85229879283@axl"; // REPLACE THIS
+        const upiUrl = `upi://pay?pa=${myUPI}&pn=EV_Station&am=${price}&cu=INR`;
+        
+        document.getElementById('qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiUrl)}`;
+        document.getElementById('amt-display').innerText = `Pay ₹${price} for ${mins} minutes`;
+        document.getElementById('qr-section').style.display = "block";
+    };
+
+    // 3. Update Firebase
+    window.startCharger = function() {
+        update(ref(db, 'charging_station_01'), {
+            command: "ON",
+            duration: currentMins
+        });
+        alert("Command sent to ESP32!");
+        document.getElementById('qr-section').style.display = "none";
+    };
+</script>
+
+</body>
+</html>
